@@ -173,8 +173,8 @@ class Agent:
                 d = json.loads(s)
             except:
                 # try to sanitize the string
-                s = cls.sanitize_json_string(s)
-                d = json.loads(s)
+                s_ = cls.sanitize_json_string(s)
+                d = json.loads(s_)
             if set(d.keys()) != set(action_info.usage.keys()):
                 raise Exception("Argument mismatch")
             return d
