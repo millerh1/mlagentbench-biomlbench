@@ -87,8 +87,11 @@ def check_file_in_work_dir(arg_names, **kwargs):
 @check_file_in_work_dir(["dir_path"])
 @record_low_level_step
 def list_files( dir_path, work_dir = ".", **kwargs):
+    max_chars = 10000
     try:
         observation = subprocess.check_output(["ls", os.path.join(work_dir,dir_path)]).decode("utf-8")
+        if len(observation) > max_chars:
+            observation = observation[:max_chars] + "...[TRUNCATED]"
         return observation
     except Exception as e:
         raise EnvException(f"Cannot list file in the {dir_path} directory: {str(e)}")
