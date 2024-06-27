@@ -68,6 +68,8 @@ class ResearchAgent(Agent):
         while not env.is_final() and len(self.history_steps) < self.args.agent_max_steps:
 
             curr_step = len(self.history_steps)
+            print("\n----------\n")
+            print("Step", curr_step)
 
             #### call LLM for next action ###
 
@@ -126,13 +128,11 @@ class ResearchAgent(Agent):
                     assert entries["Action"].strip() in self.all_tool_names
                     valid_response = True
                 except:
-                    print("Step", curr_step, file=sys.stderr)
-                    print(anthropic.AI_PROMPT + "\n" + completion + "\nObservation:\n", file=sys.stderr)
-                    print("Response is invalid and discarded", file=sys.stderr)
                     prompt += "\n\n Your response was in incorrect format. Please provide a valid response with all entries: " + ", ".join(self.valid_format_entires) + "\n\n"
                 else:
                     break
             if not valid_response:
+                print("Response is invalid and discarded", file=sys.stderr)
                 return "No valid response after max_retries"
 
             ########################################################
@@ -161,6 +161,8 @@ class ResearchAgent(Agent):
                 f.write("Step " + str(curr_step) + ":\n")
                 f.write(anthropic.AI_PROMPT + "\n" + self.print_action(entries, self.valid_format_entires) + "\nObservation:\n")
 
+            print("Action", action)
+            print("Action Input", action_input)
 
             ########################################
             #         execute action in env        #
