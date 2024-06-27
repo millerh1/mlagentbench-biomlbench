@@ -26,6 +26,7 @@ def reflection( things_to_reflect_on, work_dir = ".", research_problem = "", **k
 
 
 def understand_file( file_name, things_to_look_for, work_dir = ".", **kwargs):
+    max_blocks = 10
 
     lines = read_file(file_name, work_dir = work_dir, **kwargs).split("\n")
     # group lines to blocks so that each block has at most 10000 characters
@@ -46,6 +47,12 @@ def understand_file( file_name, things_to_look_for, work_dir = ".", **kwargs):
             for i in range(0, len(lines[counter]), 10000):
                 blocks.append((lines[counter][i:i+10000], start_line_number, end_line_number))
             counter += 1
+
+        if len(blocks) >= max_blocks:
+            blocks.append(
+                (f"File too large, only showing the first {max_blocks} blocks.", end_line_number + 1, end_line_number + 1)
+            )
+            break
 
     descriptions  = []
     for idx, (b, start_line_number, end_line_number) in enumerate(blocks):
