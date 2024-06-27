@@ -90,8 +90,8 @@ def list_files( dir_path, work_dir = ".", **kwargs):
     try:
         observation = subprocess.check_output(["ls", os.path.join(work_dir,dir_path)]).decode("utf-8")
         return observation
-    except:
-        raise EnvException(f"Cannot list file in the {dir_path} directory")
+    except Exception as e:
+        raise EnvException(f"Cannot list file in the {dir_path} directory: {str(e)}")
 
     
 
@@ -103,8 +103,8 @@ def read_file(file_name, work_dir = '.', **kwargs):
     try:
         observation = open(os.path.join(work_dir,file_name)).read()
         return observation
-    except:
-        raise EnvException(f"cannot read file {file_name}")
+    except Exception as e:
+        raise EnvException(f"cannot read file {file_name}: {str(e)}")
 
 
 @check_file_in_work_dir(["file_name"])
@@ -116,8 +116,8 @@ def write_file(file_name, content, work_dir = ".", **kwargs):
             f.write(content)
         observation = f"File {file_name} written successfully."
         return observation
-    except:
-        raise EnvException(f"cannot write file {file_name}")
+    except Exception as e:
+        raise EnvException(f"cannot write file {file_name}: {str(e)}")
 
 
 @check_file_in_work_dir(["file_name"])
@@ -129,8 +129,8 @@ def append_file(file_name, content, work_dir = ".", **kwargs):
             f.write(content)
         observation = f"File {file_name} appended successfully."
         return observation
-    except:
-        raise EnvException(f"cannot append file {file_name}")
+    except Exception as e:
+        raise EnvException(f"cannot append file {file_name}: {str(e)}")
 
 
 @check_file_in_work_dir(["source", "destination"])
@@ -142,8 +142,8 @@ def copy_file( source, destination, work_dir = ".", **kwargs):
         shutil.copyfile(os.path.join(work_dir,source), os.path.join(work_dir,destination))
         observation = f"File {source} copied to {destination}"
         return observation
-    except:
-        raise EnvException(f"File {source} copy to {destination} failed. Check whether the source and destinations are valid.")
+    except Exception as e:
+        raise EnvException(f"File {source} copy to {destination} failed. Check whether the source and destinations are valid: {str(e)}")
 
 
 @check_file_in_work_dir(["script_name"])
@@ -163,9 +163,8 @@ def undo_edit_script( script_name, work_dir = ".", **kwargs):
         new_content = open(os.path.join(work_dir,script_name)).read()
         observation = f"Content of {script_name} after undo the most recent edit:\n" + new_content
         return observation
-    except:
-        raise EnvException(f"Cannot undo the edit of file name {script_name}. Check the file name again."
-        )
+    except Exception as e:
+        raise EnvException(f"Cannot undo the edit of file name {script_name}. Check the file name again: {str(e)}")
 
 
 @check_file_in_work_dir(["script_name"])
