@@ -241,7 +241,6 @@ class SimpleActionAgent(Agent):
 
         while not env.is_final() and len(self.history_steps) < self.args.agent_max_steps:
             curr_step = len(self.history_steps)
-            print("Step", curr_step)
 
             #### call LLM for next action ###
 
@@ -278,7 +277,6 @@ class SimpleActionAgent(Agent):
                 else:
                     break
             if not valid_response:
-                print("No valid response after max_retries")
                 return "No valid response after max_retries"
 
             ########################################
@@ -287,8 +285,6 @@ class SimpleActionAgent(Agent):
 
             action = entries["Action"].strip()
             raw_action_input = entries["Action Input"]
-            print("Action", action)
-            print("Action Input", raw_action_input)
             
             # parse the action input if we can ; other wise just return the original input and wait env to throw back an error
             try:
@@ -323,7 +319,6 @@ class SimpleActionAgent(Agent):
             step_idx = len(env.trace.steps) - 1
             self.save(os.path.join(self.log_dir , f"agent_{step_idx}_{curr_step}.json"))
 
-        print("Agent loop ended")
         return "Finished successfully"
 
 
