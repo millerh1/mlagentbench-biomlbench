@@ -1,7 +1,10 @@
 """ This file contains the agent class for our AI research agent."""
 import os
 import sys
+import time
+
 import anthropic
+
 from MLAgentBench.LLM import complete_text_fast, complete_text
 from MLAgentBench.schema import Action
 from .agent import Agent
@@ -28,13 +31,18 @@ Follow these instructions and do not forget them:
 - Do not try installing any new packages or libraries.
 - If you believe you have solved the problem, you can use the Final Answer action to submit your answer. You can only submit once, so double check that you have achieved the goal before submitting.
 
+Important: you have a total time limit of {time_limit} and a step limit of {step_limit}. You will be informed of the remaining time and steps at the end of each observation.
+
 Always respond in this format exactly:
 {format_prompt}
-Observation: 
+
+Next, you will be shown an observation of the following form:
 ```
 the result of the action
-```
 
+<TIME_REMAINING: (time_remaining)>
+<STEPS_REMAINING: (steps_remaining)>
+```
 """
 
 
@@ -47,6 +55,8 @@ format_prompt_dict = {
     "Action Input": "the input to the action as a valid JSON string",
 }
 
+def format_time(time_in_sec: int):
+    return f"{time_in_sec // 3600}hrs {(time_in_sec % 3600) // 60}mins {time_in_sec % 60}secs"
 
 class ResearchAgent(Agent):
     """This class implements AI research agent with different configurations."""
@@ -56,7 +66,14 @@ class ResearchAgent(Agent):
         self.valid_format_entires = ["Reflection",  "Research Plan and Status","Fact Check", "Thought","Action", "Action Input"] # use all entries by default
         if args.valid_format_entires:
             self.valid_format_entires = args.valid_format_entires
-        self.initial_prompt = initial_prompt.format(tools_prompt=self.tools_prompt, tool_names=self.prompt_tool_names,  task_description=env.research_problem, format_prompt="\n".join([f"{k}: {format_prompt_dict[k]}" for k in self.valid_format_entires]))
+        self.initial_prompt = initial_prompt.format(
+            tools_prompt=self.tools_prompt,
+            tool_names=self.prompt_tool_names,
+            task_description=env.research_problem,
+            time_limit=format_time(self.args.max_time),
+            step_limit=self.args.max_steps,
+            format_prompt="\n".join([f"{k}: {format_prompt_dict[k]}" for k in self.valid_format_entires]),
+        )
 
     def run(self, env):
         last_steps = self.args.max_steps_in_context
@@ -191,6 +208,16 @@ class ResearchAgent(Agent):
 
                 print("Observation is too long. Summarizing...", file=sys.stderr)
                 observation = self.summarize_observation(self.print_action(entries, self.valid_format_entires), observation, log_file)
+
+            # Append time info to observation
+            time_elapsed = time.time() - self.start_time
+            time_remaining = int(self.max_time - time_elapsed)
+            steps_taken = len(self.history_steps) + 1
+            steps_remaining = self.max_steps - steps_taken
+            observation += (
+                f"\n\n<TIME_REMAINING: {format_time(time_remaining)}>\n"
+                f"<STEPS_REMAINING: {steps_remaining}>\n"
+            )
 
             self.history_steps.append({"step_idx": len(env.trace.steps), "action": entries, "observation": observation})
 
