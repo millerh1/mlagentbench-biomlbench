@@ -375,6 +375,7 @@ LOW_LEVEL_ACTIONS = [
         },
         return_value="The observation is a message informing you whether your submission file is in a format compatible for grading or not.",
         function=validate_submission,
+        is_primitive=True,
     ),
     ActionInfo(
         name="Final Answer",
