@@ -1,6 +1,7 @@
 """ This file contains the low level actions that are provided by the environment, mostly file system operations and code execution. """
 
 import os
+from pathlib import Path
 import subprocess
 import selectors
 import shutil
@@ -253,6 +254,24 @@ def request_help(request, work_dir = ".", **kwargs):
     return input(f"Research Assistant is requesting help: {request}\n")
 
 
+@check_file_in_work_dir(["dir_path"])
+@record_low_level_step
+def validate_submission(submission_path, work_dir = ".", **kwargs):
+
+    submission_path = kwargs["submission_path"]
+
+    submission_path = Path(submission_path)
+    if not submission_path.exists():
+        return f"Submission file {submission_path} does not exist."
+    submission_path = submission_path.resolve() # Make the path absolute
+
+    try:
+        observation = subprocess.check_output(["bash", "/home/validate_submission.sh", submission_path], cwd=work_dir).decode("utf-8")
+        return observation
+    except Exception as e:
+        raise EnvException(f"Failed to validate submission file {submission_path}: {str(e)}")
+
+
 ### describe the low level actions
 LOW_LEVEL_ACTIONS = [
     ActionInfo(
@@ -347,6 +366,15 @@ LOW_LEVEL_ACTIONS = [
         return_value="The observation will be the response from human.",
         function=request_help,
         is_primitive=True
+    ),
+    ActionInfo(
+        name="Validate Submission",
+        description="Use the benchmark-provided tool to validate the format of your submission. You must provide the path to a submission file.",
+        usage={
+            "submission_path": "path to the file you wish to validate, e.g. submission/submission.csv (path should be relative to your current working directory)",
+        },
+        return_value="The observation is a message informing you whether your submission file is in a format compatible for grading or not.",
+        function=validate_submission,
     ),
     ActionInfo(
         name="Final Answer",
