@@ -267,22 +267,28 @@ def request_help(request, work_dir = ".", **kwargs):
 #     except Exception as e:
 #         raise EnvException(f"Cannot list file in the {dir_path} directory: {str(e)}")
 
-# @check_file_in_work_dir(["submission_path"])
+@check_file_in_work_dir(["submission_path"])
 @record_low_level_step
 def validate_submission(submission_path, work_dir = ".", **kwargs):
     print("running validate_submission")
-
+    print("kwargs", kwargs)
     submission_path = kwargs["submission_path"]
 
+    print("submission_path", submission_path)
     submission_path = Path(submission_path)
+    print("submission_path.exists()", submission_path.exists())
     if not submission_path.exists():
         return f"Submission file {submission_path} does not exist."
     submission_path = submission_path.resolve() # Make the path absolute
+    print("submission_path", submission_path)
 
     try:
+        print("trying")
         observation = subprocess.check_output(["bash", "/home/validate_submission.sh", submission_path], cwd=work_dir).decode("utf-8")
+        print("observation", observation)
         return observation
     except Exception as e:
+        print("excepted", e)
         raise EnvException(f"Failed to validate submission file {submission_path}: {str(e)}")
 
 
