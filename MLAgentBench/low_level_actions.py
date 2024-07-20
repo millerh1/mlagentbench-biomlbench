@@ -255,31 +255,10 @@ def request_help(request, work_dir = ".", **kwargs):
     return input(f"Research Assistant is requesting help: {request}\n")
 
 
-# @check_file_in_work_dir(["dir_path"])
-# @record_low_level_step
-# def list_files( dir_path, work_dir = ".", **kwargs):
-#     max_chars = 10000
-#     try:
-#         observation = subprocess.check_output(["ls", os.path.join(work_dir,dir_path)]).decode("utf-8")
-#         if len(observation) > max_chars:
-#             observation = observation[:max_chars] + "...[TRUNCATED]"
-#         return observation
-#     except Exception as e:
-#         raise EnvException(f"Cannot list file in the {dir_path} directory: {str(e)}")
-
 @check_file_in_work_dir(["submission_path"])
 @record_low_level_step
 def validate_submission(submission_path, work_dir = ".", **kwargs):
-    print("running validate_submission")
-    # print("kwargs", kwargs)
-    # submission_path = kwargs["submission_path"]
-
-    print("submission_path", submission_path)
     submission_path = Path(submission_path)
-    print("submission_path.exists()", submission_path.exists())
-    if not submission_path.exists():
-        return f"Submission file {submission_path} does not exist."
-    submission_path = submission_path.resolve() # Make the path absolute
     print("submission_path", submission_path)
 
     try:
