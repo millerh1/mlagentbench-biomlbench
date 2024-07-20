@@ -331,7 +331,7 @@ class Environment:
                     print(e, file=sys.stderr)
                     if "Connection aborted." in str(e):
                         raise Exception("Connection aborted for crfm")
-                    observation = f"EnvError: Error executing {action_name}."
+                    observation = f"EnvError: Error executing {action_name}.\n{e}"
             else:
                 observation = invalid_action_error
 
