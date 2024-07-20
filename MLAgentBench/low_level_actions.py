@@ -258,16 +258,11 @@ def request_help(request, work_dir = ".", **kwargs):
 @check_file_in_work_dir(["submission_path"])
 @record_low_level_step
 def validate_submission(submission_path, work_dir = ".", **kwargs):
-    submission_path = Path(submission_path)
-    print("submission_path", submission_path)
-
+    submission_path = submission_path.strip()
     try:
-        print("trying")
         observation = subprocess.check_output(["bash", "/home/validate_submission.sh", submission_path], cwd=work_dir).decode("utf-8")
-        print("observation", observation)
         return observation
     except Exception as e:
-        print("excepted", e)
         raise EnvException(f"Failed to validate submission file {submission_path}: {str(e)}")
 
 
