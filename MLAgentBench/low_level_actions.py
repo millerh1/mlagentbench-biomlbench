@@ -254,7 +254,7 @@ def request_help(request, work_dir = ".", **kwargs):
     return input(f"Research Assistant is requesting help: {request}\n")
 
 
-@check_file_in_work_dir(["dir_path"])
+@check_file_in_work_dir(["submission_path"])
 @record_low_level_step
 def validate_submission(submission_path, work_dir = ".", **kwargs):
 
