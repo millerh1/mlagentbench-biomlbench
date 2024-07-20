@@ -271,8 +271,8 @@ def request_help(request, work_dir = ".", **kwargs):
 @record_low_level_step
 def validate_submission(submission_path, work_dir = ".", **kwargs):
     print("running validate_submission")
-    print("kwargs", kwargs)
-    submission_path = kwargs["submission_path"]
+    # print("kwargs", kwargs)
+    # submission_path = kwargs["submission_path"]
 
     print("submission_path", submission_path)
     submission_path = Path(submission_path)
