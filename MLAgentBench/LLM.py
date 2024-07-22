@@ -247,11 +247,8 @@ def complete_text_crfm(prompt="", stop_sequences = [], model="openai/gpt-4-0314"
     stop=tenacity.stop_after_attempt(10),  # Stop after 10 attempts
     retry=tenacity.retry_if_exception_type(
         (
-            # https://platform.openai.com/docs/guides/error-codes/python-library-error-types
-            openai.APIConnectionError,
-            openai.APITimeoutError,
-            openai.InternalServerError,
-            openai.RateLimitError,
+            # https://github.com/openai/openai-python/blob/v0.28.0/openai/error.py
+            openai.error.OpenAIError,
         )
     ),
 )
