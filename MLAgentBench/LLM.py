@@ -2,6 +2,7 @@
 
 import os
 from functools import partial
+import tenacity
 import tiktoken
 from .schema import TooLongPromptError, LLMError
 
@@ -239,7 +240,21 @@ def complete_text_crfm(prompt="", stop_sequences = [], model="openai/gpt-4-0314"
         log_to_file(log_file, prompt if not messages else str(messages), completion, model, max_tokens_to_sample)
     return completion
 
-
+@tenacity.retry(
+    wait=tenacity.wait_exponential(
+        multiplier=1, min=2, max=60
+    ),  # Exponential backoff starting at 2 seconds, max 60 seconds
+    stop=tenacity.stop_after_attempt(10),  # Stop after 10 attempts
+    retry=tenacity.retry_if_exception_type(
+        (
+            # https://platform.openai.com/docs/guides/error-codes/python-library-error-types
+            openai.APIConnectionError,
+            openai.APITimeoutError,
+            openai.InternalServerError,
+            openai.RateLimitError,
+        )
+    ),
+)
 def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_tokens_to_sample=500, temperature=0.2, log_file=None, **kwargs):
     """ Call the OpenAI API to complete a prompt."""
     raw_request = {

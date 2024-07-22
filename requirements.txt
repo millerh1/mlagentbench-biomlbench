@@ -42,6 +42,7 @@ kaggle
 openai
 anthropic
 langchain
+langchain_anthropic
 sentencepiece
 spacy
 nltk
@@ -51,6 +52,7 @@ peft
 accelerate
 evaluate
 vertaxai
+tiktoken
 
 # graph
 torch-geometric==2.3.1
@@ -62,3 +64,4 @@ networkx
 cchardet
 pytest
 dacite
+tenacity
