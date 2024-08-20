@@ -29,7 +29,6 @@ Follow these instructions and do not forget them:
 - Follow the plan and try to achieve the goal as straightforwardly as possible.
 - Highlight the supporting experiment results and reasoning before drawing any conclusions. 
 - Do not try installing any new packages or libraries.
-- If you believe you have solved the problem, you can use the Final Answer action to submit your answer. You can only submit once, so double check that you have achieved the goal before submitting.
 
 Important: you have a total time limit of {time_limit} and a step limit of {step_limit}. You will be informed of the remaining time and steps at the end of each observation.
 

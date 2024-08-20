@@ -373,7 +373,7 @@ LOW_LEVEL_ACTIONS = [
     ),
     ActionInfo(
         name="Final Answer",
-        description="Use this to indicate completion. IMPORTANT: You will not be able to perform any other actions after this one. Use this only when you are sure that you have completed the task (e.g. you have provided your submission as instructed).",
+        description="Use this to end your session. IMPORTANT: You will not be able to perform any other actions after this one. Use this only when you are sure that you have exhausted all avenues for improving your solution to the task.",
         usage={
             "final_answer": "summary of what you have accomplished and the final state of the task"
         },
