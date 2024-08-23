@@ -65,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-steps-in-context", type=int, default=3, help="max steps in context")
     parser.add_argument("--max-observation-steps-in-context", type=int, default=3, help="max observation steps in context")
     parser.add_argument("--max-retries", type=int, default=5, help="max retries")
+    parser.add_argument("--max-tokens", type=int, default=2000, help="max tokens")
 
     # langchain configs
     parser.add_argument("--langchain-agent", type=str, default="zero-shot-react-description", help="langchain agent")

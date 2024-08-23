@@ -10,7 +10,6 @@ from MLAgentBench.schema import Action
 from .agent import Agent
 
 
-MAX_TOKENS = 2000 # Sampling max
 TEMPERATURE = 1 # High temp for generation
 
 initial_prompt = """You are a helpful research assistant. You have access to the following tools:
@@ -133,8 +132,8 @@ class ResearchAgent(Agent):
             for _ in range(self.args.max_retries):
                 log_file = os.path.join(self.log_dir , f"step_{curr_step}_log.log")
                 model_kwargs = {
-                    "max_tokens": MAX_TOKENS,
-                    "max_tokens_to_sample": MAX_TOKENS,
+                    "max_tokens": self.args.max_tokens,
+                    "max_tokens_to_sample": self.args.max_tokens,
                     "temperature": TEMPERATURE,
                 }
                 completion = complete_text(prompt, log_file, self.args.llm_name, **model_kwargs)
