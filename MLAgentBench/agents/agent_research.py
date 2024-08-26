@@ -256,13 +256,15 @@ class ResearchAgent(Agent):
 
     ################### Helper functions #####################
 
-    def summarize_observation(self, action, observation, log_file, bs = 10000):
+    def summarize_observation(self, action, observation, log_file, bs = 10000, max_chunks=100):
         """ Summarize the observation if it is too long with a sliding window of size bs """
 
-        bs = 10000
         blocks = [observation[i:i+bs] for i in range(0, len(observation), bs)]
         descriptions = []
         for idx, b in enumerate(blocks):
+            if idx >= max_chunks:
+                descriptions.append(f"WARNING: Reached maximum number of chunks ({max_chunks}), this summary of the observation will be incomplete. Please consider trimming down your action request to avoid overloading the observation response.")
+                break
             start_line_number = bs*idx+1
             end_line_number = bs*idx+1 + len(b)
             prompt = f"""
@@ -283,7 +285,7 @@ Do not include any result that is guessed rather than directly confirmed by the 
         if len(descriptions) == 1:
             completion = descriptions[0]
         else:
-            descriptions = "\n\n".join(["Segment {idx}: \n\n" + s for s in descriptions])
+            descriptions = "\n\n".join([f"Segment {idx}: \n\n" + s for s in descriptions])
             prompt = f"""
 {action}
 
