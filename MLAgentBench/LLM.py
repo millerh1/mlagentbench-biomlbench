@@ -275,20 +275,23 @@ def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_t
 def complete_text(prompt, log_file, model, **kwargs):
     """ Complete text using the specified model with appropriate API. """
     
-    if model.startswith("claude"):
-        # use anthropic API
-        completion = complete_text_claude(prompt, stop_sequences=[anthropic.HUMAN_PROMPT, "Observation:"], log_file=log_file, model=model, **kwargs)
-    elif model.startswith("gemini"):
-        completion = complete_text_gemini(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
-    elif model.startswith("huggingface"):
-        completion = complete_text_hf(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
-    elif "/" in model:
-        # use CRFM API since this specifies organization like "openai/..."
-        completion = complete_text_crfm(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
-    else:
-        # use OpenAI API
-        completion = complete_text_openai(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
-    return completion
+    try:
+        if model.startswith("claude"):
+            # use anthropic API
+            completion = complete_text_claude(prompt, stop_sequences=[anthropic.HUMAN_PROMPT, "Observation:"], log_file=log_file, model=model, **kwargs)
+        elif model.startswith("gemini"):
+            completion = complete_text_gemini(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
+        elif model.startswith("huggingface"):
+            completion = complete_text_hf(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
+        elif "/" in model:
+            # use CRFM API since this specifies organization like "openai/..."
+            completion = complete_text_crfm(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
+        else:
+            # use OpenAI API
+            completion = complete_text_openai(prompt, stop_sequences=["Observation:"], log_file=log_file, model=model, **kwargs)
+        return completion
+    except tenacity.RetryError as e:
+        return str(e)  # If we failed even after retrying, just return the error message and the agent will see its failed attempt
 
 # specify fast models for summarization etc
 FAST_MODEL = "claude-v1"
