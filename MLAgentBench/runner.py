@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--llm-name", type=str, default="claude-v1", help="llm name")
     parser.add_argument("--fast-llm-name", type=str, default="claude-v1", help="llm name")
     parser.add_argument("--edit-script-llm-name", type=str, default="claude-v1", help="llm name")
-    parser.add_argument("--edit-script-llm-max-tokens", type=int, default=4000, help="llm max tokens")
+    parser.add_argument("--edit-script-llm-max-tokens", type=int, default=8000, help="llm max tokens")
     parser.add_argument("--agent-max-steps", type=int, default=50, help="max iterations for agent")
 
     # research agent configs
@@ -62,8 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("--actions-add-to-prompt", type=str, nargs='+', default=[], help="actions to add")
     parser.add_argument("--retrieval", action="store_true", help="enable retrieval")
     parser.add_argument("--valid-format-entires", type=str, nargs='+', default=None, help="valid format entries")
-    parser.add_argument("--max-steps-in-context", type=int, default=3, help="max steps in context")
-    parser.add_argument("--max-observation-steps-in-context", type=int, default=3, help="max observation steps in context")
+    parser.add_argument("--max-steps-in-context", type=int, default=10, help="max steps in context")
+    parser.add_argument("--max-observation-steps-in-context", type=int, default=10, help="max observation steps in context")
     parser.add_argument("--max-retries", type=int, default=5, help="max retries")
     parser.add_argument("--max-tokens", type=int, default=2000, help="max tokens")
 

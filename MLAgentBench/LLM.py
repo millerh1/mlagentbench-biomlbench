@@ -30,13 +30,32 @@ except Exception as e:
     print("Could not load anthropic API key claude_api_key.txt.")
     
 try:
-    import openai
+    from openai import OpenAI
     # setup OpenAI API key
-    openai.organization, openai.api_key  =  open("openai_api_key.txt").read().strip().split(":")    
-    os.environ["OPENAI_API_KEY"] = openai.api_key 
+    content = open("openai_api_key.txt").read().strip()
+    if ":" in content:
+        organization, api_key = content.split(":", 1)
+        # Only set organization if it's not the placeholder "org"
+        if organization != "org":
+            openai_client = OpenAI(api_key=api_key, organization=organization)
+        else:
+            openai_client = OpenAI(api_key=api_key)
+    else:
+        # Just the API key
+        openai_client = OpenAI(api_key=content)
+        api_key = content
+    os.environ["OPENAI_API_KEY"] = api_key
+    print(f"[DEBUG] OpenAI client created successfully")
 except Exception as e:
     print(e)
     print("Could not load OpenAI API key openai_api_key.txt.")
+    # Fallback to environment variable
+    try:
+        openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        print(f"[DEBUG] OpenAI client created from environment variable")
+    except Exception as fallback_e:
+        print(f"[DEBUG] Failed to create OpenAI client: {fallback_e}")
+        openai_client = None
 
 try:
     import vertexai
@@ -247,12 +266,12 @@ def complete_text_crfm(prompt="", stop_sequences = [], model="openai/gpt-4-0314"
     stop=tenacity.stop_after_attempt(10),  # Stop after 10 attempts
     retry=tenacity.retry_if_exception_type(
         (
-            # https://github.com/openai/openai-python/blob/v0.28.0/openai/error.py
-            openai.error.OpenAIError,
+            # OpenAI v1.x+ exceptions - using Exception as fallback since openai.error no longer exists
+            Exception,
         )
     ),
 )
-def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_tokens_to_sample=500, temperature=0.2, log_file=None, **kwargs):
+def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_tokens_to_sample=8000, temperature=0.2, log_file=None, **kwargs):
     """ Call the OpenAI API to complete a prompt."""
     raw_request = {
           "model": model,
@@ -261,16 +280,64 @@ def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_t
           "stop": stop_sequences or None,  # API doesn't like empty list
           **kwargs
     }
-    if model.startswith("gpt-3.5") or model.startswith("gpt-4"):
-        messages = [{"role": "user", "content": prompt}]
-        response = openai.ChatCompletion.create(**{"messages": messages,**raw_request})
-        completion = response["choices"][0]["message"]["content"]
-    else:
-        response = openai.Completion.create(**{"prompt": prompt,**raw_request})
-        completion = response["choices"][0]["text"]
-    if log_file is not None:
-        log_to_file(log_file, prompt, completion, model, max_tokens_to_sample)
-    return completion
+    # Sanitize unsupported params for GPT-5 family before logging
+    if model.startswith("gpt-5"):
+        raw_request["temperature"] = None
+        raw_request["stop"] = None
+    print(f"[DEBUG] Raw request parameters (sanitized if needed): {raw_request}")
+    
+    try:
+        if model.startswith("gpt-"):
+            print(f"[DEBUG] Using ChatCompletion API for model: {model}")
+            messages = [{"role": "user", "content": prompt}]
+            print(f"[DEBUG] About to call openai_client.chat.completions.create...")
+            
+            # GPT-5 and newer models use max_completion_tokens and only support default temperature (1)
+            if model.startswith("gpt-5") or model.startswith("gpt-4o"):
+                # GPT-5: no stop, default temp; use max_completion_tokens
+                response = openai_client.chat.completions.create(
+                    model=raw_request["model"],
+                    messages=messages,
+                    max_completion_tokens=raw_request["max_tokens"]
+                )
+            else:
+                response = openai_client.chat.completions.create(
+                    model=raw_request["model"],
+                    messages=messages,
+                    temperature=raw_request["temperature"],
+                    max_tokens=raw_request["max_tokens"],
+                    stop=raw_request["stop"]
+                )
+            print(f"[DEBUG] Received response from ChatCompletion API: {response}")
+            # Guard against empty choices/messages
+            try:
+                completion = response.choices[0].message.content or ""
+            except Exception:
+                completion = ""
+        else:
+            print(f"[DEBUG] Using Completion API for model: {model}")
+            print(f"[DEBUG] About to call openai_client.completions.create...")
+            response = openai_client.completions.create(
+                model=raw_request["model"],
+                prompt=prompt,
+                temperature=raw_request["temperature"],
+                max_tokens=raw_request["max_tokens"],
+                stop=raw_request["stop"]
+            )
+            print(f"[DEBUG] Received response from Completion API")
+            completion = response.choices[0].text
+        
+        print(f"[DEBUG] Completion length: {len(completion)} characters")
+        if log_file is not None:
+            log_to_file(log_file, prompt, completion, model, max_tokens_to_sample)
+        # If completion is empty, raise a retriable error so caller retries instead of failing downstream
+        if not completion:
+            raise LLMError("Empty completion from model")
+        print(f"[DEBUG] Returning completion successfully")
+        return completion
+    except Exception as e:
+        print(f"[DEBUG] Exception in OpenAI API call: {type(e).__name__}: {str(e)}")
+        raise
 
 def complete_text(prompt, log_file, model, **kwargs):
     """ Complete text using the specified model with appropriate API. """
@@ -294,8 +361,11 @@ def complete_text(prompt, log_file, model, **kwargs):
         return str(e)  # If we failed even after retrying, just return the error message and the agent will see its failed attempt
 
 # specify fast models for summarization etc
-FAST_MODEL = "claude-v1"
+FAST_MODEL = "gpt-5-2025-08-07"
 def complete_text_fast(prompt, **kwargs):
-    return complete_text(prompt = prompt, model = FAST_MODEL, temperature =0.01, **kwargs)
+    # GPT-5 fast path: no temperature override, much higher token minimum
+    if 'max_tokens_to_sample' not in kwargs:
+        kwargs['max_tokens_to_sample'] = 8000  # GPT-5 needs substantial token allocation for analysis
+    return complete_text(prompt = prompt, model = FAST_MODEL, **kwargs)
 # complete_text_fast = partial(complete_text_openai, temperature= 0.01)
 

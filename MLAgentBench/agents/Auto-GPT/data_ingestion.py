@@ -65,7 +65,7 @@ def main() -> None:
         "--max_length",
         type=int,
         help="The max_length of each chunk when ingesting files (default: 4000)",
-        default=4000,
+        default=8000,
     )
     args = parser.parse_args()
 

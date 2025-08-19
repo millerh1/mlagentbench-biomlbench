@@ -201,7 +201,8 @@ class ResearchAgent(Agent):
             #######################################################
 
             # if observation is too long, we need to summarize it
-            if len(observation) > 5000:
+            # GPT-5 has massive context window, so use much higher threshold
+            if len(observation) > 80000:
                 log_file = os.path.join(self.log_dir , f"step_{curr_step}_summarize_observation_log.log")
 
                 print("Observation is too long. Summarizing...", file=sys.stderr)
@@ -256,7 +257,7 @@ class ResearchAgent(Agent):
 
     ################### Helper functions #####################
 
-    def summarize_observation(self, action, observation, log_file, bs = 10000, max_chunks=100):
+    def summarize_observation(self, action, observation, log_file, bs = 40000, max_chunks=100):
         """ Summarize the observation if it is too long with a sliding window of size bs """
 
         blocks = [observation[i:i+bs] for i in range(0, len(observation), bs)]

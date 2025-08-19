@@ -26,33 +26,42 @@ def reflection( things_to_reflect_on, work_dir = ".", research_problem = "", **k
 
 
 def understand_file( file_name, things_to_look_for, work_dir = ".", **kwargs):
-    max_blocks = 10
+    # Modern LLMs like GPT-5 can handle much larger contexts
+    max_chunk_size = 100_000  # N characters per chunk (much more efficient)
+    max_blocks = 3  # Usually 1-3 chunks is enough for most files
 
-    lines = read_file(file_name, work_dir = work_dir, **kwargs).split("\n")
-    # group lines to blocks so that each block has at most 10000 characters
-    counter = 0
-    blocks = []
-    while counter < len(lines):
-        block = []
-        start_line_number = counter + 1
-        while counter < len(lines) and len("\n".join(block)) + len(lines[counter]) < 10000:
-            block.append(lines[counter])
-            counter += 1
-        if len(block) > 0:
-            end_line_number = counter 
-            blocks.append(("\n".join(block), start_line_number, end_line_number))
-        else:
-            end_line_number = start_line_number
-            # probably a file of one/few very long line; split by 10000 characters
-            for i in range(0, len(lines[counter]), 10000):
-                blocks.append((lines[counter][i:i+10000], start_line_number, end_line_number))
-            counter += 1
-
-        if len(blocks) >= max_blocks:
-            blocks.append(
-                (f"File too large, only showing the first {max_blocks} blocks.", end_line_number + 1, end_line_number + 1)
-            )
-            break
+    file_content = read_file(file_name, work_dir = work_dir, **kwargs)
+    
+    # For smaller files, process entire file at once (much faster)
+    if len(file_content) <= max_chunk_size:
+        blocks = [(file_content, 1, len(file_content.split("\n")))]
+    else:
+        # For larger files, create fewer, larger chunks
+        lines = file_content.split("\n")
+        counter = 0
+        blocks = []
+        while counter < len(lines) and len(blocks) < max_blocks:
+            block = []
+            start_line_number = counter + 1
+            current_size = 0
+            
+            # Build chunk up to max_chunk_size
+            while counter < len(lines) and current_size < max_chunk_size:
+                line = lines[counter]
+                if current_size + len(line) > max_chunk_size and len(block) > 0:
+                    break  # Don't add this line, chunk is full enough
+                block.append(line)
+                current_size += len(line) + 1  # +1 for newline
+                counter += 1
+                
+            if len(block) > 0:
+                end_line_number = counter
+                blocks.append(("\n".join(block), start_line_number, end_line_number))
+                
+        if counter < len(lines):
+            # File was truncated
+            remaining_lines = len(lines) - counter
+            blocks.append((f"File truncated: {remaining_lines} lines remaining (file too large for analysis).", counter + 1, len(lines)))
 
     descriptions  = []
     for idx, (b, start_line_number, end_line_number) in enumerate(blocks):
@@ -80,8 +89,8 @@ def understand_file( file_name, things_to_look_for, work_dir = ".", **kwargs):
 
         return completion
 
-EDIT_SCRIPT_MODEL = "claude-v1"
-EDIT_SCRIPT_MAX_TOKENS = 4000
+EDIT_SCRIPT_MODEL = "gpt-5-2025-08-07"
+EDIT_SCRIPT_MAX_TOKENS = 8000
 def edit_script(script_name, edit_instruction, save_name, work_dir = ".", **kwargs):
     #TODO: handle long file editing
     try:
@@ -102,7 +111,14 @@ def edit_script(script_name, edit_instruction, save_name, work_dir = ".", **kwar
 
     completion = complete_text(prompt, log_file=kwargs["log_file"], model=EDIT_SCRIPT_MODEL, max_tokens_to_sample=EDIT_SCRIPT_MAX_TOKENS)
 
-    new_content = completion.split("```python")[1].split("```")[0].strip()
+    # Robust extraction of python code block
+    start_tag = "```python"
+    end_tag = "```"
+    if start_tag in completion and end_tag in completion.split(start_tag,1)[1]:
+        new_content = completion.split(start_tag,1)[1].split(end_tag,1)[0].strip()
+    else:
+        # Fallback: return error-like message for the agent to see and retry upstream
+        raise EnvException("Edit Script returned no python code block")
 
     # backup all old file with prefix script_name
     backup_name = os.path.join(work_dir,"backup", f"{script_name}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}")
